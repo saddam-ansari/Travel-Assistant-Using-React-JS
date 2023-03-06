@@ -1,23 +1,62 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from "react";
+import Header from "./components/Header";
+import { CssBaseline, Grid } from "@material-ui/core";
+import Map from "./components/Map";
+import List from "./components/List";
+import { getPlacesData } from "./api/travelAssistantAPI";
 
 function App() {
+  const [type, setType] = useState("restaurants");
+  const [isLoading, setIsLoading] = useState(false);
+  const [places, setPlaces] = useState([]);
+  const [coords, setCoords] = useState({});
+  const [bounds, setBounds] = useState(null);
+  const [childClicked, setChildClicked] = useState(null);
+
+  useEffect(() => {
+    if (bounds) {
+      setIsLoading(true);
+      getPlacesData(type, bounds.ne, bounds.sw).then((data) => {
+        setPlaces(data.filter((place) => place.name && place.num_reviews > 0));
+        setIsLoading(false);
+      });
+    }
+  }, [type, setPlaces, bounds]);
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      ({ coords: { latitude, longitude } }) => {
+        setCoords({ lat: latitude, lng: longitude });
+      }
+    );
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <CssBaseline />
+      <Header />
+      <Grid container style={{ width: "100%" }}>
+        <Grid xs={12} md={4}>
+          <List
+            type={type}
+            setType={(type) => {
+              setType(type);
+            }}
+            childClicked={childClicked}
+            isLoading={isLoading}
+            places={places}
+          />
+        </Grid>
+        <Grid xs={12} md={8}>
+          <Map
+            coords={coords}
+            places={places}
+            setBounds={(bounds) => setBounds(bounds)}
+            setCoords={(coordinates) => setCoords(coordinates)}
+            setChildClicked={(child) => setChildClicked(child)}
+          />
+        </Grid>
+      </Grid>
     </div>
   );
 }
